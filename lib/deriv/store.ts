@@ -38,6 +38,11 @@ export class InMemoryStore {
     return this.candles[symbol][timeframe];
   }
 
+  setCandles(symbol: string, timeframe: Timeframe, candles: Candle[]) {
+    this.ensureSymbol(symbol);
+    this.candles[symbol][timeframe] = candles.slice(-MAX_CANDLES);
+  }
+
   addSignal(signal: Signal) {
     this.ensureSymbol(signal.symbol);
     this.signals[signal.symbol].unshift(signal);
