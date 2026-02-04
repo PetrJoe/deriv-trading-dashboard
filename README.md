@@ -20,12 +20,12 @@ Real-time trading signal generation for Deriv synthetic Volatility Indices using
    - `npm run dev`
 
 ## API Endpoints
-- `GET /api/stream?symbol=R_100` — SSE stream for candles, metrics, signals
-- `POST /api/subscribe` — body `{ "symbol": "R_100" }`
-- `GET /api/candles?symbol=R_100&timeframe=M5`
-- `GET /api/signal/latest?symbol=R_100`
-- `GET /api/signal/history?symbol=R_100`
-- `POST /api/backtest` — body `{ "symbol": "R_100", "csv": "time,open,high,low,close\n..." }`
+- `GET /api/stream?symbol=R_75` — SSE stream for candles, metrics, signals
+- `POST /api/subscribe` — body `{ "symbol": "R_75" }`
+- `GET /api/candles?symbol=R_75&timeframe=M5`
+- `GET /api/signal/latest?symbol=R_75`
+- `GET /api/signal/history?symbol=R_75`
+- `POST /api/backtest` — body `{ "symbol": "R_75", "csv": "time,open,high,low,close\n..." }`
 
 ## CSV Format for Backtest
 ```

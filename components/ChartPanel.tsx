@@ -7,10 +7,11 @@ import {
   ISeriesApi,
   LineData,
   CandlestickData,
-  UTCTimestamp
+  UTCTimestamp,
+  SeriesMarker
 } from "lightweight-charts";
 import { StreamPayload, Candle } from "../lib/types";
-import { calculateRSI, calculateSupertrend } from "../lib/deriv/indicators";
+import { calculateRSI, calculateFractals, Fractal } from "../lib/deriv/indicators";
 
 const CHART_HEIGHT = 420;
 const RSI_HEIGHT = 140;
@@ -28,13 +29,21 @@ export default function ChartPanel({ symbol, streamEvent, latestSignal, metrics 
   const chartRef = useRef<IChartApi | null>(null);
   const rsiChartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-  const supertrendSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const rsiSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const candlesRef = useRef<Candle[]>([]);
   const fibLinesRef = useRef<any[]>([]);
   const slLineRef = useRef<any | null>(null);
   const tp1LineRef = useRef<any | null>(null);
   const tp2LineRef = useRef<any | null>(null);
+  const signalMarkersRef = useRef<SeriesMarker<UTCTimestamp>[]>([]);
+  const fractalMarkersRef = useRef<SeriesMarker<UTCTimestamp>[]>([]);
+
+  const updateMarkers = () => {
+    if (!candleSeriesRef.current) return;
+    const markers = [...signalMarkersRef.current, ...fractalMarkersRef.current];
+    markers.sort((a, b) => (a.time as number) - (b.time as number));
+    candleSeriesRef.current.setMarkers(markers);
+  };
 
   useEffect(() => {
     if (!containerRef.current || chartRef.current) return;
@@ -43,7 +52,7 @@ export default function ChartPanel({ symbol, streamEvent, latestSignal, metrics 
       height: CHART_HEIGHT,
       layout: { background: { color: "#121826" }, textColor: "#e5e7eb" },
       grid: { vertLines: { color: "#1f2937" }, horzLines: { color: "#1f2937" } },
-      timeScale: { timeVisible: true, secondsVisible: false }
+      timeScale: { timeVisible: true, secondsVisible: false, rightOffset: 50 }
     });
 
     const candleSeries = chart.addCandlestickSeries({
@@ -55,14 +64,8 @@ export default function ChartPanel({ symbol, streamEvent, latestSignal, metrics 
       wickDownColor: "#ef4444"
     });
 
-    const supertrendSeries = chart.addLineSeries({
-      color: "#38bdf8",
-      lineWidth: 2
-    });
-
     chartRef.current = chart;
     candleSeriesRef.current = candleSeries;
-    supertrendSeriesRef.current = supertrendSeries;
 
     return () => {
       chart.remove();
@@ -78,7 +81,7 @@ export default function ChartPanel({ symbol, streamEvent, latestSignal, metrics 
       layout: { background: { color: "#121826" }, textColor: "#e5e7eb" },
       grid: { vertLines: { color: "#1f2937" }, horzLines: { color: "#1f2937" } },
       rightPriceScale: { borderColor: "#1f2937" },
-      timeScale: { timeVisible: true, secondsVisible: false }
+      timeScale: { timeVisible: true, secondsVisible: false, rightOffset: 50 }
     });
 
     const rsiSeries = rsiChart.addLineSeries({ color: "#f59e0b", lineWidth: 2 });
@@ -106,7 +109,7 @@ export default function ChartPanel({ symbol, streamEvent, latestSignal, metrics 
         }));
         candleSeriesRef.current?.setData(chartData);
         chartRef.current?.timeScale().scrollToRealTime();
-        updateSupertrend();
+        updateFractals();
         updateRsi();
       })
       .catch(() => null);
@@ -131,7 +134,7 @@ export default function ChartPanel({ symbol, streamEvent, latestSignal, metrics 
       low: candle.low,
       close: candle.close
     });
-    updateSupertrend();
+    updateFractals();
     updateRsi();
   }, [streamEvent, symbol]);
 
@@ -141,7 +144,8 @@ export default function ChartPanel({ symbol, streamEvent, latestSignal, metrics 
     if (slLineRef.current) candleSeriesRef.current.removePriceLine(slLineRef.current);
     if (tp1LineRef.current) candleSeriesRef.current.removePriceLine(tp1LineRef.current);
     if (tp2LineRef.current) candleSeriesRef.current.removePriceLine(tp2LineRef.current);
-    candleSeriesRef.current.setMarkers([
+    
+    signalMarkersRef.current = [
       {
         time: Math.floor(new Date(latestSignal.timestamp).getTime() / 1000) as UTCTimestamp,
         position: latestSignal.action === "BUY" ? "belowBar" : "aboveBar",
@@ -149,7 +153,8 @@ export default function ChartPanel({ symbol, streamEvent, latestSignal, metrics 
         shape: latestSignal.action === "BUY" ? "arrowUp" : "arrowDown",
         text: latestSignal.action
       }
-    ]);
+    ];
+    updateMarkers();
 
     if (typeof latestSignal.stopLoss === "number") {
       slLineRef.current = candleSeriesRef.current.createPriceLine({
@@ -203,16 +208,16 @@ export default function ChartPanel({ symbol, streamEvent, latestSignal, metrics 
     }
   }, [metrics]);
 
-  const updateSupertrend = () => {
-    if (!supertrendSeriesRef.current) return;
-    const st = calculateSupertrend(candlesRef.current, 10, 2);
-    if (st.length === 0) return;
-    const startIndex = candlesRef.current.length - st.length;
-    const data: LineData<UTCTimestamp>[] = st.map((point, index) => ({
-      time: (candlesRef.current[startIndex + index]?.time ?? 0) as UTCTimestamp,
-      value: point.value
+  const updateFractals = () => {
+    const fractals = calculateFractals(candlesRef.current, 2);
+    fractalMarkersRef.current = fractals.map((f) => ({
+      time: f.time as UTCTimestamp,
+      position: f.type === "up" ? "aboveBar" : "belowBar",
+      color: f.type === "up" ? "#10b981" : "#f43f5e",
+      shape: "circle",
+      size: 0.5
     }));
-    supertrendSeriesRef.current.setData(data);
+    updateMarkers();
   };
 
   const updateRsi = () => {
@@ -233,7 +238,7 @@ export default function ChartPanel({ symbol, streamEvent, latestSignal, metrics 
     <div className="grid" style={{ gap: 12 }}>
       <div>
         <h2>{title}</h2>
-        <small>Supertrend overlay, RSI pane, SL/TP lines, markers.</small>
+        <small>Fractals (Swing Points), RSI pane, SL/TP lines, markers.</small>
       </div>
       <div ref={containerRef} style={{ width: "100%" }} />
       <div ref={rsiRef} style={{ width: "100%" }} />

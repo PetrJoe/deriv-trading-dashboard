@@ -44,6 +44,7 @@ export function fetchHistoricalCandles(
           ticks_history: symbol,
           adjust_start_time: 1,
           count,
+          end: "latest",
           granularity: granularityMap[timeframe],
           style: "candles"
         })

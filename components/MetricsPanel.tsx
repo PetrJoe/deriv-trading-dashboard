@@ -9,7 +9,7 @@ export default function MetricsPanel({ metrics, latestSignal }: Props) {
   return (
     <div className="card">
       <h3>Live Metrics</h3>
-      <div className="grid grid-3">
+      <div className="grid grid-2">
         <div>
           <small>Supertrend</small>
           <div className={`badge ${metrics?.supertrend === "bullish" ? "success" : "danger"}`}>
@@ -19,10 +19,6 @@ export default function MetricsPanel({ metrics, latestSignal }: Props) {
         <div>
           <small>RSI</small>
           <div className="badge">{metrics?.rsi?.toFixed?.(2) ?? "--"}</div>
-        </div>
-        <div>
-          <small>ATR</small>
-          <div className="badge">{metrics?.atr?.toFixed?.(2) ?? "--"}</div>
         </div>
       </div>
 

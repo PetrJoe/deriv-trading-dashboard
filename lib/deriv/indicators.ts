@@ -95,3 +95,44 @@ export function calculateSupertrend(
 
   return result;
 }
+
+export type Fractal = {
+  time: number;
+  price: number;
+  type: "up" | "down";
+};
+
+export function calculateFractals(candles: Candle[], period: number = 2): Fractal[] {
+  const fractals: Fractal[] = [];
+  if (candles.length < period * 2 + 1) return fractals;
+
+  for (let i = period; i < candles.length - period; i++) {
+    const curr = candles[i];
+
+    // Up Fractal
+    let isUp = true;
+    for (let j = 1; j <= period; j++) {
+      if (candles[i - j].high > curr.high || candles[i + j].high > curr.high) {
+        isUp = false;
+        break;
+      }
+    }
+
+    // Down Fractal
+    let isDown = true;
+    for (let j = 1; j <= period; j++) {
+      if (candles[i - j].low < curr.low || candles[i + j].low < curr.low) {
+        isDown = false;
+        break;
+      }
+    }
+
+    if (isUp) {
+      fractals.push({ time: curr.time, price: curr.high, type: "up" });
+    }
+    if (isDown) {
+      fractals.push({ time: curr.time, price: curr.low, type: "down" });
+    }
+  }
+  return fractals;
+}

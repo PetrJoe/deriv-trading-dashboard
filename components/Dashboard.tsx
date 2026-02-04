@@ -8,7 +8,7 @@ import SignalLog from "./SignalLog";
 import { StreamPayload } from "../lib/types";
 
 export default function Dashboard() {
-  const [symbol, setSymbol] = useState("R_100");
+  const [symbol, setSymbol] = useState("R_75");
   const [streamEvent, setStreamEvent] = useState<StreamPayload | null>(null);
   const [signals, setSignals] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
@@ -56,7 +56,7 @@ export default function Dashboard() {
       <div className="row" style={{ justifyContent: "space-between" }}>
         <div>
           <h1>Deriv Volatility Signals</h1>
-          <small>Multi-timeframe Supertrend + RSI + ATR + Fibonacci strategy.</small>
+          <small>Multi-timeframe Supertrend + RSI + Fibonacci strategy.</small>
         </div>
         <div className="row">
           {alert && <span className="badge warn">{alert}</span>}

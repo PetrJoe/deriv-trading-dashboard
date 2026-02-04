@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const symbol = searchParams.get("symbol") ?? "R_100";
+  const symbol = searchParams.get("symbol") ?? "R_75";
   const timeframe = (searchParams.get("timeframe") ?? "M5") as Timeframe;
   let candles = store.getCandles(symbol, timeframe);
 

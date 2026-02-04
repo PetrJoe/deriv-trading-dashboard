@@ -23,7 +23,7 @@ function parseCsv(csv: string) {
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const symbol = body?.symbol ?? "R_100";
+  const symbol = body?.symbol ?? "R_75";
   const csv = body?.csv as string | undefined;
   if (!csv) {
     return Response.json({ ok: false, error: "Missing csv" }, { status: 400 });
