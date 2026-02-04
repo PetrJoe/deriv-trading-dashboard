@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import ChartPanel from "./ChartPanel";
-import MetricsPanel from "./MetricsPanel";
 import PairSelector from "./PairSelector";
-import SignalLog from "./SignalLog";
 import { StreamPayload } from "../lib/types";
 
 export default function Dashboard() {
@@ -64,14 +62,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-2">
-        <div className="card">
-          <ChartPanel symbol={symbol} streamEvent={streamEvent} latestSignal={latestSignal} metrics={metrics} />
-        </div>
-        <div className="grid" style={{ gap: 16 }}>
-          <MetricsPanel metrics={metrics} latestSignal={latestSignal} />
-          <SignalLog signals={signals} />
-        </div>
+      <div className="card">
+        <ChartPanel symbol={symbol} streamEvent={streamEvent} latestSignal={latestSignal} metrics={metrics} />
       </div>
     </div>
   );

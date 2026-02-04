@@ -136,3 +136,127 @@ export function calculateFractals(candles: Candle[], period: number = 2): Fracta
   }
   return fractals;
 }
+
+export type FibonacciLevel = {
+  level: number;
+  price: number;
+  color: string;
+};
+
+export type FibonacciRetracement = {
+  startPrice: number;
+  endPrice: number;
+  startTime: number;
+  endTime: number;
+  trend: "up" | "down";
+  levels: FibonacciLevel[];
+};
+
+export function calculateFibonacciLevels(candles: Candle[]): FibonacciRetracement | null {
+  // 1. Get all raw fractals
+  const fractals = calculateFractals(candles, 5); 
+  if (fractals.length < 2) return null;
+
+  // 2. Filter to get alternating significant Highs and Lows (ZigZag-like)
+  const cleanFractals: Fractal[] = [];
+  
+  // Add first fractal
+  cleanFractals.push(fractals[0]);
+
+  for (let i = 1; i < fractals.length; i++) {
+    const last = cleanFractals[cleanFractals.length - 1];
+    const curr = fractals[i];
+
+    if (last.type === curr.type) {
+      // If same type, keep the more extreme one
+      if (last.type === "up") {
+        if (curr.price > last.price) {
+          cleanFractals[cleanFractals.length - 1] = curr;
+        }
+      } else {
+        if (curr.price < last.price) {
+          cleanFractals[cleanFractals.length - 1] = curr;
+        }
+      }
+    } else {
+      // If different type, add it
+      cleanFractals.push(curr);
+    }
+  }
+
+  // Need at least 2 points
+  if (cleanFractals.length < 2) return null;
+
+  // 3. Select the LAST two points
+  const endFractal = cleanFractals[cleanFractals.length - 1];
+  const startFractal = cleanFractals[cleanFractals.length - 2];
+
+  const trend = startFractal.type === "down" && endFractal.type === "up" ? "up" : "down";
+  const diff = Math.abs(endFractal.price - startFractal.price);
+
+  // User Rules:
+  // Uptrend: Anchor Low -> High. 0 = High, 1 = Low.
+  // Downtrend: Anchor High -> Low. 0 = Low, 1 = High.
+  
+  // Levels:
+  // 0.236: Shallow
+  // 0.382: Moderate
+  // 0.5: Psychological Midpoint
+  // 0.618: Golden Ratio (Key Buy/Sell Zone)
+  // 0.786: Deep Retracement (Last Defense)
+  // 1.0: Invalidation
+  // 1.272, 1.618: Extensions (TP)
+
+  const rawLevels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+  const extensionLevels = [-0.272, -0.618]; // Negative because they go BEYOND the start (0) in our calculation logic
+
+  const levels: FibonacciLevel[] = [];
+
+  // 1. Standard Levels
+  rawLevels.forEach(level => {
+    let price = 0;
+    let color = "#787b86"; // Default gray
+    
+    if (level === 0.5) color = "#fbbf24"; // Yellow (Psychological)
+    if (level === 0.618) color = "#facc15"; // Gold (Golden Ratio)
+    if (level === 0.786) color = "#f87171"; // Red (Deep/Stop Zone)
+    if (level === 1) color = "#ef4444"; // Red (Invalidation)
+    
+    if (trend === "up") {
+      // Uptrend (Low -> High)
+      // Retracing DOWN from High (0). 100% retracement = Low (Start Price).
+      // Price = High - (Diff * Level)
+      price = endFractal.price - (diff * level);
+    } else {
+      // Downtrend (High -> Low)
+      // Retracing UP from Low (0). 100% retracement = High (Start Price).
+      // Price = Low + (Diff * Level)
+      price = endFractal.price + (diff * level);
+    }
+    levels.push({ level, price, color });
+  });
+
+  // 2. Extensions (TP)
+  extensionLevels.forEach(level => {
+    let price = 0;
+    // Extensions go beyond the High in Uptrend, or below Low in Downtrend.
+    // Our formula above: Price = End - (Diff * Level)
+    // If Level is negative (e.g. -0.618): Price = End + (Diff * 0.618) -> Higher than High (TP for Long)
+    
+    if (trend === "up") {
+      price = endFractal.price - (diff * level);
+    } else {
+      price = endFractal.price + (diff * level);
+    }
+    levels.push({ level: Math.abs(level) + 1, price, color: "#22c55e" }); // Green for TP (1.272, 1.618)
+  });
+
+  return {
+    startPrice: startFractal.price,
+    endPrice: endFractal.price,
+    startTime: startFractal.time,
+    endTime: endFractal.time,
+    trend,
+    levels
+  };
+}
