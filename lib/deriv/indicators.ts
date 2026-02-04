@@ -187,9 +187,28 @@ export function calculateFibonacciLevels(candles: Candle[]): FibonacciRetracemen
   // Need at least 2 points
   if (cleanFractals.length < 2) return null;
 
-  // 3. Select the LAST two points
-  const endFractal = cleanFractals[cleanFractals.length - 1];
-  const startFractal = cleanFractals[cleanFractals.length - 2];
+  // 3. Select the best swing (Impulse vs Retracement)
+  // If the last move is a small pullback (retracement) of the previous large move (impulse),
+  // we want to draw Fibs on the IMPULSE to find entry points for the pullback.
+  
+  let endFractal = cleanFractals[cleanFractals.length - 1];
+  let startFractal = cleanFractals[cleanFractals.length - 2];
+  
+  if (cleanFractals.length >= 3) {
+      const prevStart = cleanFractals[cleanFractals.length - 3];
+      const prevEnd = cleanFractals[cleanFractals.length - 2]; // Same as startFractal
+      
+      const lastSwingDiff = Math.abs(endFractal.price - startFractal.price);
+      const prevSwingDiff = Math.abs(prevEnd.price - prevStart.price);
+      
+      // If the last swing is smaller than the previous swing (Pullback),
+      // and they are in opposite directions (which they should be due to alternating logic),
+      // then we use the Previous Swing (Impulse).
+      if (lastSwingDiff < prevSwingDiff) {
+          startFractal = prevStart;
+          endFractal = prevEnd;
+      }
+  }
 
   const trend = startFractal.type === "down" && endFractal.type === "up" ? "up" : "down";
   const diff = Math.abs(endFractal.price - startFractal.price);
