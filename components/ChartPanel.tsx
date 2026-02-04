@@ -105,6 +105,7 @@ export default function ChartPanel({ symbol, streamEvent, latestSignal, metrics 
           close: c.close
         }));
         candleSeriesRef.current?.setData(chartData);
+        chartRef.current?.timeScale().scrollToRealTime();
         updateSupertrend();
         updateRsi();
       })
